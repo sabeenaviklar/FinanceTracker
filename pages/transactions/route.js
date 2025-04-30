@@ -75,11 +75,10 @@ import connectDB from '@/lib/db';  // DB connection utility
 import Transaction from '@/models/transaction';
 import Budget from '@/models/Budget';  // Import the Budget model
 
-// Handle the transaction and budget logic
 export default async function handler(req, res) {
   await connectDB();  // Ensure DB connection
 
-  // Handle GET request for transactions
+  //  GET request for transactions
   if (req.method === 'GET') {
     try {
       const transactions = await Transaction.find().sort({ date: -1 }); // Sort transactions by date descending
@@ -89,12 +88,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle POST request for transactions
+  // POST request for transactions
   else if (req.method === 'POST') {
     try {
       const { description, amount, category, date } = req.body;
 
-      // Create a new transaction
+     
       const newTransaction = new Transaction({ description, amount, category, date });
       await newTransaction.save();
 
@@ -104,7 +103,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle DELETE request for transactions
+  // DELETE request for transactions
   else if (req.method === 'DELETE') {
     try {
       const { id } = req.body;  // Assuming `id` is sent in the body to delete a specific transaction
@@ -116,7 +115,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle GET request for Budgeting (Fetch budgets by month and year)
+  //  GET request for Budgeting 
   else if (req.method === 'GET' && req.query.type === 'budget') {
     try {
       const { month, year } = req.query;
@@ -127,7 +126,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle POST request for setting budgets
+  //  POST request for setting budgets
   else if (req.method === 'POST' && req.body.type === 'budget') {
     try {
       const { category, amount, month, year } = req.body;
@@ -136,12 +135,12 @@ export default async function handler(req, res) {
       const existingBudget = await Budget.findOne({ category, month, year });
 
       if (existingBudget) {
-        // If budget exists, update it
+        // If budget exists, updating it
         existingBudget.amount = amount;
         await existingBudget.save();
         res.status(200).json(existingBudget);
       } else {
-        // If no existing budget, create a new one
+        // If no existing budget, creating a new one
         const newBudget = new Budget({ category, amount, month, year });
         await newBudget.save();
         res.status(201).json(newBudget);
@@ -151,7 +150,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // Method not allowed for other HTTP methods
   else {
     res.status(405).json({ message: 'Method not allowed' });
   }
