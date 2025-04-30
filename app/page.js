@@ -224,6 +224,139 @@
 // }
 
 
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+// import axios from 'axios';
+
+// export default function Home() {
+//   const [amount, setAmount] = useState('');
+//   const [description, setDescription] = useState('');
+//   const [date, setDate] = useState('');
+//   const [transactions, setTransactions] = useState([]);
+//   const [error, setError] = useState('');
+
+//   const handleAddTransaction = () => {
+//     // Basic Validation
+//     if (!amount || !description || !date) {
+//       setError('All fields are required.');
+//       return;
+//     }
+//     if (isNaN(amount)) {
+//       setError('Amount must be a number');
+//       return;
+//     }
+
+//     setError('');
+
+//     const newTransaction = { amount: parseFloat(amount), description, date };
+//     setTransactions([newTransaction, ...transactions]);
+
+//     setAmount('');
+//     setDescription('');
+//     setDate('');
+//   };
+
+//   // Aggregating transactions by month
+//   const getMonthlyData = () => {
+//     const monthlyExpenses = {};
+
+//     transactions.forEach((transaction) => {
+//       const month = new Date(transaction.date).toLocaleString('default', { month: 'short' });
+//       monthlyExpenses[month] = (monthlyExpenses[month] || 0) + transaction.amount;
+//     });
+
+//     return Object.keys(monthlyExpenses).map((month) => ({
+//       name: month,
+//       expense: monthlyExpenses[month],
+//     }));
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-100 p-6">
+//       <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl p-8">
+//         <h1 className="text-2xl font-bold text-purple-700 mb-6">
+//           💸 Personal Finance Visualizer
+//         </h1>
+
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//           <input
+//             type="number"
+//             placeholder="Amount"
+//             value={amount}
+//             onChange={(e) => setAmount(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//           <input
+//             type="text"
+//             placeholder="Description"
+//             value={description}
+//             onChange={(e) => setDescription(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//           <input
+//             type="date"
+//             value={date}
+//             onChange={(e) => setDate(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//         </div>
+
+//         {error && <div className="text-red-500 mb-4">{error}</div>}
+
+//         <button
+//           onClick={handleAddTransaction}
+//           className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
+//         >
+//           ➕ Add Transaction
+//         </button>
+
+//         {transactions.length > 0 && (
+//           <div className="mt-8">
+//             <h2 className="text-lg font-semibold mb-2 text-gray-700">Transaction History</h2>
+//             <table className="w-full text-left border border-gray-300 rounded-md overflow-hidden">
+//               <thead className="bg-purple-100">
+//                 <tr>
+//                   <th className="px-4 py-2">Amount</th>
+//                   <th className="px-4 py-2">Description</th>
+//                   <th className="px-4 py-2">Date</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {transactions.map((tx, index) => (
+//                   <tr key={index} className="even:bg-gray-50">
+//                     <td className="px-4 py-2">₹{tx.amount}</td>
+//                     <td className="px-4 py-2">{tx.description}</td>
+//                     <td className="px-4 py-2">{tx.date}</td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         )}
+
+//         {/* Monthly Expenses Bar Chart */}
+//         {transactions.length > 0 && (
+//           <div className="mt-8">
+//             <h2 className="text-lg font-semibold mb-2 text-gray-700">Monthly Expenses</h2>
+//             <ResponsiveContainer width="100%" height={400}>
+//               <BarChart data={getMonthlyData()}>
+//                 <CartesianGrid strokeDasharray="3 3" />
+//                 <XAxis dataKey="name" />
+//                 <YAxis />
+//                 <Tooltip />
+//                 <Legend />
+//                 <Bar dataKey="expense" fill="#8884d8" />
+//               </BarChart>
+//             </ResponsiveContainer>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -234,12 +367,33 @@ export default function Home() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
+  const [category, setCategory] = useState('');
   const [transactions, setTransactions] = useState([]);
+  const [budgets, setBudgets] = useState({});
   const [error, setError] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Fetch budgets from API
+  useEffect(() => {
+    const fetchBudgets = async () => {
+      try {
+        const response = await axios.get(`/api/transactions?type=budget&month=${month}&year=${year}`);
+        const budgetData = response.data.reduce((acc, budget) => {
+          acc[budget.category] = budget.amount;
+          return acc;
+        }, {});
+        setBudgets(budgetData);
+      } catch (err) {
+        console.error('Error fetching budgets:', err);
+      }
+    };
+
+    fetchBudgets();
+  }, []);
 
   const handleAddTransaction = () => {
-    // Basic Validation
-    if (!amount || !description || !date) {
+    if (!amount || !description || !date || !category) {
       setError('All fields are required.');
       return;
     }
@@ -249,13 +403,37 @@ export default function Home() {
     }
 
     setError('');
-
-    const newTransaction = { amount: parseFloat(amount), description, date };
+    
+    const newTransaction = { amount: parseFloat(amount), description, category, date };
     setTransactions([newTransaction, ...transactions]);
 
     setAmount('');
     setDescription('');
     setDate('');
+    setCategory('');
+  };
+
+  // Set or update the budget for a category
+  const handleSetBudget = async () => {
+    if (!selectedCategory || !budgetAmount) {
+      setError('Please select a category and set a valid budget.');
+      return;
+    }
+
+    try {
+      await axios.post('/api/transactions', {
+        type: 'budget',
+        category: selectedCategory,
+        amount: parseFloat(budgetAmount),
+        month: new Date().toLocaleString('default', { month: 'short' }),
+        year: new Date().getFullYear(),
+      });
+
+      setBudgets(prev => ({ ...prev, [selectedCategory]: parseFloat(budgetAmount) }));
+      setBudgetAmount('');
+    } catch (err) {
+      setError('Error setting budget');
+    }
   };
 
   // Aggregating transactions by month
@@ -273,6 +451,18 @@ export default function Home() {
     }));
   };
 
+  // Budget vs Actual comparison for chart
+  const getBudgetComparisonData = () => {
+    const months = Object.keys(budgets);
+    return months.map(month => ({
+      name: month,
+      budget: budgets[month],
+      actual: transactions
+        .filter(tx => tx.category === month)
+        .reduce((sum, tx) => sum + tx.amount, 0)
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl p-8">
@@ -280,6 +470,7 @@ export default function Home() {
           💸 Personal Finance Visualizer
         </h1>
 
+        {/* Add Transaction Form */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <input
             type="number"
@@ -301,6 +492,18 @@ export default function Home() {
             onChange={(e) => setDate(e.target.value)}
             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">Select Category</option>
+            <option value="Food">Food</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Bills">Bills</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
 
         {error && <div className="text-red-500 mb-4">{error}</div>}
@@ -312,29 +515,37 @@ export default function Home() {
           ➕ Add Transaction
         </button>
 
-        {transactions.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold mb-2 text-gray-700">Transaction History</h2>
-            <table className="w-full text-left border border-gray-300 rounded-md overflow-hidden">
-              <thead className="bg-purple-100">
-                <tr>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Description</th>
-                  <th className="px-4 py-2">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((tx, index) => (
-                  <tr key={index} className="even:bg-gray-50">
-                    <td className="px-4 py-2">₹{tx.amount}</td>
-                    <td className="px-4 py-2">{tx.description}</td>
-                    <td className="px-4 py-2">{tx.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Add Budget Form */}
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold mb-2 text-gray-700">Set Monthly Budget</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">Select Category</option>
+              <option value="Food">Food</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Bills">Bills</option>
+              <option value="Other">Other</option>
+            </select>
+            <input
+              type="number"
+              placeholder="Budget Amount"
+              value={budgetAmount}
+              onChange={(e) => setBudgetAmount(e.target.value)}
+              className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <button
+              onClick={handleSetBudget}
+              className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
+            >
+              Set Budget
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Monthly Expenses Bar Chart */}
         {transactions.length > 0 && (
@@ -348,6 +559,24 @@ export default function Home() {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="expense" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        
+        {/* Budget vs Actual Comparison */}
+        {Object.keys(budgets).length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold mb-2 text-gray-700">Budget vs Actual Comparison</h2>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={getBudgetComparisonData()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="budget" fill="#82ca9d" />
+                <Bar dataKey="actual" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
           </div>

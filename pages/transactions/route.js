@@ -1,5 +1,4 @@
-import connectDB from '@/lib/db';
-import Transaction from '@/models/Transaction';
+
 
 // export default async function handler(req, res) {
 //   await connectDB();
@@ -26,20 +25,71 @@ import Transaction from '@/models/Transaction';
 // }
 
 
+// export default async function handler(req, res) {
+//   await connectDB();  // Ensure DB connection
+
+//   // Handle GET request
+//   if (req.method === 'GET') {
+//     try {
+//       const transactions = await Transaction.find().sort({ date: -1 }); // Optional sorting by date
+//       res.status(200).json(transactions);
+//     } catch (error) {
+//       res.status(500).json({ error: 'Error fetching transactions' });
+//     }
+//   }
+
+//   // Handle POST request
+//   else if (req.method === 'POST') {
+//     try {
+//       const { description, amount, category, date } = req.body;
+
+//       // Create a new transaction
+//       const newTransaction = new Transaction({ description, amount, category, date });
+//       await newTransaction.save();
+
+//       res.status(201).json(newTransaction);  // Send back the created transaction
+//     } catch (error) {
+//       res.status(500).json({ error: 'Error saving transaction' });
+//     }
+//   }
+
+//   // Handle DELETE request
+//   else if (req.method === 'DELETE') {
+//     try {
+//       const { id } = req.body;  // Assuming `id` is sent in the body to delete a specific transaction
+
+//       await Transaction.findByIdAndDelete(id);  // Delete the transaction by ID
+//       res.status(200).json({ message: 'Transaction deleted' });
+//     } catch (error) {
+//       res.status(500).json({ error: 'Error deleting transaction' });
+//     }
+//   }
+
+//   // Method not allowed for other HTTP methods
+//   else {
+//     res.status(405).json({ message: 'Method not allowed' });
+//   }
+// }
+
+import connectDB from '@/lib/db';  // DB connection utility
+import Transaction from '@/models/transaction';
+import Budget from '@/models/Budget';  // Import the Budget model
+
+// Handle the transaction and budget logic
 export default async function handler(req, res) {
   await connectDB();  // Ensure DB connection
 
-  // Handle GET request
+  // Handle GET request for transactions
   if (req.method === 'GET') {
     try {
-      const transactions = await Transaction.find().sort({ date: -1 }); // Optional sorting by date
+      const transactions = await Transaction.find().sort({ date: -1 }); // Sort transactions by date descending
       res.status(200).json(transactions);
     } catch (error) {
       res.status(500).json({ error: 'Error fetching transactions' });
     }
   }
 
-  // Handle POST request
+  // Handle POST request for transactions
   else if (req.method === 'POST') {
     try {
       const { description, amount, category, date } = req.body;
@@ -54,7 +104,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle DELETE request
+  // Handle DELETE request for transactions
   else if (req.method === 'DELETE') {
     try {
       const { id } = req.body;  // Assuming `id` is sent in the body to delete a specific transaction
@@ -63,6 +113,41 @@ export default async function handler(req, res) {
       res.status(200).json({ message: 'Transaction deleted' });
     } catch (error) {
       res.status(500).json({ error: 'Error deleting transaction' });
+    }
+  }
+
+  // Handle GET request for Budgeting (Fetch budgets by month and year)
+  else if (req.method === 'GET' && req.query.type === 'budget') {
+    try {
+      const { month, year } = req.query;
+      const budgets = await Budget.find({ month, year });
+      res.status(200).json(budgets);  // Return budgets for the month/year
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching budgets' });
+    }
+  }
+
+  // Handle POST request for setting budgets
+  else if (req.method === 'POST' && req.body.type === 'budget') {
+    try {
+      const { category, amount, month, year } = req.body;
+
+      // Check if a budget already exists for this category, month, and year
+      const existingBudget = await Budget.findOne({ category, month, year });
+
+      if (existingBudget) {
+        // If budget exists, update it
+        existingBudget.amount = amount;
+        await existingBudget.save();
+        res.status(200).json(existingBudget);
+      } else {
+        // If no existing budget, create a new one
+        const newBudget = new Budget({ category, amount, month, year });
+        await newBudget.save();
+        res.status(201).json(newBudget);
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Error setting budget' });
     }
   }
 
