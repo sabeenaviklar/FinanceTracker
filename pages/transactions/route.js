@@ -71,7 +71,7 @@
 //   }
 // }
 
-import connectDB from '@/lib/db';  // DB connection utility
+import { connectDB } from '@/lib/db';  // DB connection utility
 import Transaction from '@/models/transaction';
 import Budget from '@/models/Budget';  // Import the Budget model
 
