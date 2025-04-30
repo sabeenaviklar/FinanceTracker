@@ -140,24 +140,137 @@
 //   );
 // }
 
+// 'use client';
+
+// export default function Home() {
+//   const [amount, setAmount] = useState('');
+//   const [description, setDescription] = useState('');
+//   const [date, setDate] = useState('');
+//   const [transactions, setTransactions] = useState([]);
+
+//   const handleAddTransaction = () => {
+//     if (!amount || !description || !date) return;
+//     const newTransaction = { amount, description, date };
+//     setTransactions([newTransaction, ...transactions]);
+
+//     setAmount('');
+//     setDescription('');
+//     setDate('');
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-100 p-6">
+//       <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl p-8">
+//         <h1 className="text-2xl font-bold text-purple-700 mb-6">
+//           💸 Personal Finance Visualizer
+//         </h1>
+
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//           <input
+//             type="number"
+//             placeholder="Amount"
+//             value={amount}
+//             onChange={(e) => setAmount(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//           <input
+//             type="text"
+//             placeholder="Description"
+//             value={description}
+//             onChange={(e) => setDescription(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//           <input
+//             type="date"
+//             value={date}
+//             onChange={(e) => setDate(e.target.value)}
+//             className="border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+//           />
+//         </div>
+
+//         <button
+//           onClick={handleAddTransaction}
+//           className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
+//         >
+//           ➕ Add Transaction
+//         </button>
+
+//         {transactions.length > 0 && (
+//           <div className="mt-8">
+//             <h2 className="text-lg font-semibold mb-2 text-gray-700">Transaction History</h2>
+//             <table className="w-full text-left border border-gray-300 rounded-md overflow-hidden">
+//               <thead className="bg-purple-100">
+//                 <tr>
+//                   <th className="px-4 py-2">Amount</th>
+//                   <th className="px-4 py-2">Description</th>
+//                   <th className="px-4 py-2">Date</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {transactions.map((tx, index) => (
+//                   <tr key={index} className="even:bg-gray-50">
+//                     <td className="px-4 py-2">₹{tx.amount}</td>
+//                     <td className="px-4 py-2">{tx.description}</td>
+//                     <td className="px-4 py-2">{tx.date}</td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
 
 export default function Home() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [transactions, setTransactions] = useState([]);
+  const [error, setError] = useState('');
 
   const handleAddTransaction = () => {
-    if (!amount || !description || !date) return;
-    const newTransaction = { amount, description, date };
+    // Basic Validation
+    if (!amount || !description || !date) {
+      setError('All fields are required.');
+      return;
+    }
+    if (isNaN(amount)) {
+      setError('Amount must be a number');
+      return;
+    }
+
+    setError('');
+
+    const newTransaction = { amount: parseFloat(amount), description, date };
     setTransactions([newTransaction, ...transactions]);
 
     setAmount('');
     setDescription('');
     setDate('');
+  };
+
+  // Aggregating transactions by month
+  const getMonthlyData = () => {
+    const monthlyExpenses = {};
+
+    transactions.forEach((transaction) => {
+      const month = new Date(transaction.date).toLocaleString('default', { month: 'short' });
+      monthlyExpenses[month] = (monthlyExpenses[month] || 0) + transaction.amount;
+    });
+
+    return Object.keys(monthlyExpenses).map((month) => ({
+      name: month,
+      expense: monthlyExpenses[month],
+    }));
   };
 
   return (
@@ -190,6 +303,8 @@ export default function Home() {
           />
         </div>
 
+        {error && <div className="text-red-500 mb-4">{error}</div>}
+
         <button
           onClick={handleAddTransaction}
           className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition"
@@ -220,8 +335,24 @@ export default function Home() {
             </table>
           </div>
         )}
+
+        {/* Monthly Expenses Bar Chart */}
+        {transactions.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold mb-2 text-gray-700">Monthly Expenses</h2>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={getMonthlyData()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="expense" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
