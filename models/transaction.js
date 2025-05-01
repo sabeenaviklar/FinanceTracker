@@ -1,14 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 
-// const transactionSchema = new Schema(
-//   {
-//     amount: Number,
-//     date: Date,
-//     description: String,
-//   },
-//   { timestamps: true }
-// );
-
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
